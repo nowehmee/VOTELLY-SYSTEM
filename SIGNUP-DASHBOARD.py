@@ -17,8 +17,6 @@ from kivy.metrics import dp
 
 Window.size = (360, 640)
 
-# --- SUPPORTING CLASSES ---
-
 class ModeCard(ButtonBehavior, BoxLayout):
     def __init__(self, title, bg_color, icon_char, **kwargs):
         super().__init__(**kwargs)
@@ -67,8 +65,6 @@ class VotingModeModal(ModalView):
     def select_mode(self, instance):
         self.dismiss()
         self.sm.get_screen('dashboard').go_to_gate(instance.title)
-
-# --- SCREENS ---
 
 class SignUpScreen(Screen):
     def __init__(self, **kwargs):
@@ -248,14 +244,12 @@ class ProfileScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.layout = FloatLayout()
-        
-        # 1. Background (Solid White)
+       
         with self.layout.canvas.before:
             Color(1, 1, 1, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=Window.size)
         self.layout.bind(size=self.update_bg)
 
-        # 2. Header Buttons (Text Only)
         self.back_btn = Button(
             text="Back", font_size='16sp', size_hint=(None, None), size=(dp(80), dp(50)),
             pos_hint={'x': 0.05, 'top': 0.98}, background_color=(0,0,0,0), color=(0.3, 0.3, 1, 1), bold=True
@@ -267,23 +261,21 @@ class ProfileScreen(Screen):
             pos_hint={'right': 0.95, 'top': 0.98}, background_color=(0,0,0,0), color=(0.3, 0.3, 1, 1), bold=True
         )
 
-        # 3. Profile Icon Shape (Positioned at Top)
         self.avatar_container = FloatLayout(
             size_hint=(None, None), size=(dp(100), dp(180)), pos_hint={'center_x': 0.5, 'top': 7.32}
         )
         
         with self.avatar_container.canvas:
-            Color(0.25, 0.85, 0.7, 1) # Teal Ring
+            Color(0.25, 0.85, 0.7, 1) 
             self.avatar_ring = Line(circle=(0, 0, dp(88)), width=dp(2.5))
-            Color(1, 1, 1, 1) # White Silhouette
+            Color(1, 1, 1, 1) 
             self.avatar_head = Ellipse(size=(dp(75), dp(75)))
             self.avatar_body = Ellipse(size=(dp(125), dp(60)))
-            Color(0.8, 0.8, 0.8, 1) # Subtle border for visibility
+            Color(0.8, 0.8, 0.8, 1) 
             self.head_border = Line(circle=(0, 0, dp(37.5)), width=dp(1))
 
         self.avatar_container.bind(pos=self.update_avatar_position)
 
-        # 4. Info Card
         self.card = FloatLayout(size_hint=(0.85, 0.28), pos_hint={'center_x': 0.5, 'top': 0.60})
         with self.card.canvas.before:
             Color(0.96, 0.96, 0.96, 1)
@@ -297,7 +289,6 @@ class ProfileScreen(Screen):
         self.email_label = Label(text="@email_address", font_size='14sp', color=(0.5, 0.5, 0.5, 1),
                             pos_hint={'center_x': 0.5, 'center_y': 0.58})
 
-        # 5. Edit Profile Button
         self.edit_btn = Button(text="Edit Profile", size_hint=(0.7, 0.25), pos_hint={'center_x': 0.5, 'center_y': 0.3},
                           background_normal='', background_color=(0,0,0,0), color=(1, 1, 1, 1), bold=True)
         with self.edit_btn.canvas.before:
@@ -321,7 +312,7 @@ class ProfileScreen(Screen):
     def update_btn_ui(self, ins, *args): self.btn_rect.pos = ins.pos; self.btn_rect.size = ins.size
     def go_back(self, *args): self.manager.transition.direction = 'right'; self.manager.current = 'dashboard'
 
-    # --- EDIT POPUP LOGIC ---
+    # EDIT PROFILE
     def show_edit_popup(self, instance):
         popup_content = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
         popup_content.add_widget(Label(text="Edit Profile", font_size='22sp', bold=True, color=(0.3, 0.3, 1, 1), size_hint_y=None, height=dp(40)))
@@ -333,7 +324,7 @@ class ProfileScreen(Screen):
         save_btn_container = FloatLayout(size_hint_y=None, height=dp(55))
         save_btn = Button(text="SAVE CHANGES", bold=True, color=(1, 1, 1, 1), background_color=(0, 0, 0, 0), pos_hint={'center_x': 0.5, 'center_y': 0.5})
         with save_btn.canvas.before:
-            Color(0.25, 0.85, 0.7, 1) # Teal
+            Color(0.25, 0.85, 0.7, 1) 
             self.save_rect = RoundedRectangle(radius=[dp(15)])
         save_btn.bind(pos=lambda i, v: setattr(self.save_rect, 'pos', i.pos), size=lambda i, v: setattr(self.save_rect, 'size', i.size))
         
@@ -359,3 +350,4 @@ class VotellyApp(App):
 
 if __name__ == '__main__':
     VotellyApp().run()
+
