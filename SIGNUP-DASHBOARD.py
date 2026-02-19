@@ -10,16 +10,19 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle, Rectangle, Line
+from kivy.graphics import Color, RoundedRectangle, Rectangle, Line, Ellipse
 from kivy.graphics.texture import Texture 
 from kivy.core.window import Window
 from kivy.metrics import dp
 
 Window.size = (360, 640)
 
+# --- SUPPORTING CLASSES ---
+
 class ModeCard(ButtonBehavior, BoxLayout):
     def __init__(self, title, bg_color, icon_char, **kwargs):
         super().__init__(**kwargs)
+        self.title = title 
         self.orientation = 'vertical'
         self.padding = dp(15)
         self.spacing = dp(5)
@@ -35,16 +38,16 @@ class ModeCard(ButtonBehavior, BoxLayout):
         self.rect.size = self.size
 
 class VotingModeModal(ModalView):
-    def __init__(self, **kwargs):
+    def __init__(self, screen_manager, **kwargs):
         super().__init__(**kwargs)
+        self.sm = screen_manager
         self.size_hint = (1, 1)
         self.background_color = (1, 1, 1, 1) 
         self.background = "" 
         
         layout = FloatLayout()
-        
         layout.add_widget(Label(text="Choose Voting Mode", font_size='26sp', bold=True, color=(0, 0, 0, 1), pos_hint={'center_x': 0.5, 'top': 1.4}))
-        layout.add_widget(Label(text="Voting Mode", font_size='15sp', bold=True, color=(0.4, 0.4, 0.9, 1), pos_hint={'center_x': 0.5, 'top': 1.35}))
+        layout.add_widget(Label(text="Voting Mode", font_size='15sp', bold=True, color=(0.4, 0.4, 0.9, 1), pos_hint={'center_x': 0.5, 'top': 1.36}))
         
         grid = GridLayout(cols=2, spacing=dp(10), padding=dp(25), size_hint=(1, 0.55), pos_hint={'center_x': 0.5, 'top': 0.78})
         modes = [("Raise Hand", (0.3, 0.3, 1, 1), "H"), ("Scan Ballot", (0.5, 1, 0.8, 1), "SB"), 
@@ -52,16 +55,20 @@ class VotingModeModal(ModalView):
         
         for t, c, i in modes:
             card = ModeCard(title=t, bg_color=c, icon_char=i)
-            card.bind(on_release=self.dismiss)
+            card.bind(on_release=self.select_mode)
             grid.add_widget(card)
         
         layout.add_widget(grid)
-
         close_btn = Button(text="+", font_size='35sp', background_normal='', background_color=(0.95, 0.95, 1, 1), color=(0.3, 0.3, 1, 1), size_hint=(None, None), size=(dp(65), dp(65)), pos_hint={'center_x': 0.5, 'y': 0.05})
         close_btn.bind(on_release=self.dismiss)
         layout.add_widget(close_btn)
-        
         self.add_widget(layout)
+
+    def select_mode(self, instance):
+        self.dismiss()
+        self.sm.get_screen('dashboard').go_to_gate(instance.title)
+
+# --- SCREENS ---
 
 class SignUpScreen(Screen):
     def __init__(self, **kwargs):
@@ -145,10 +152,17 @@ class DashboardScreen(Screen):
 
         layout = FloatLayout()
         
+        prof_btn = Button(text="P", size_hint=(None, None), size=(dp(45), dp(45)), pos_hint={'right': 0.95, 'top': 0.98}, background_color=(0,0,0,0), color=(1,1,1,1), bold=True)
+        with prof_btn.canvas.before:
+            Color(0.3, 0.3, 1, 1)
+            self.p_circ = Ellipse(pos=prof_btn.pos, size=prof_btn.size)
+        prof_btn.bind(pos=lambda ins, v: setattr(self.p_circ, 'pos', ins.pos), on_release=lambda x: setattr(self.manager, 'current', 'profile'))
+        layout.add_widget(prof_btn)
+
         header = BoxLayout(orientation='vertical', size_hint=(0.80, None), height=dp(60), spacing=dp(-7), pos_hint={'center_x': 0.5, 'top': 0.90})
-        welcome_label = Label(text="WELCOME!", font_size='34sp', bold=True, color=(0, 0, 0, 1), halign='left', valign='bottom', size_hint_y=None, height=dp(40))
+        welcome_label = Label(text="WELCOME!", font_size='34sp', bold=True, color=(0.3, 0.3, 0.9, 1), halign='left', valign='bottom', size_hint_y=None, height=dp(40))
         welcome_label.bind(size=lambda s, w: setattr(s, 'text_size', w))
-        subtitle_label = Label(text="VOTE, TALLY, WISELY", font_size='12sp', color=(0, 0, 0, 1), halign='left', valign='top', size_hint_y=None, height=dp(20))
+        subtitle_label = Label(text="VOTE, TALLY, WISELY", font_size='12sp', color=(0.3, 0.3, 0.9, 1), halign='left', valign='top', size_hint_y=None, height=dp(20))
         subtitle_label.bind(size=lambda s, w: setattr(s, 'text_size', w))
         header.add_widget(welcome_label); header.add_widget(subtitle_label)
         layout.add_widget(header)
@@ -156,7 +170,7 @@ class DashboardScreen(Screen):
         jr = Button(text="Join Room", font_size='32sp', bold=True, color=(0.3, 0.3, 0.9, 1), background_color=(0,0,0,0), size_hint=(0.85, 0.15), pos_hint={'center_x': 0.5, 'top': 0.75})
         with jr.canvas.before:
             Color(0.43, 0.89, 0.75, 1); self.jl = Line(rounded_rectangle=(0,0,0,0, 20), width=1.5)
-        jr.bind(pos=self.up_jl, size=self.up_jl, on_release=lambda x: self.go_to_gate("Ballot Form"))
+        jr.bind(pos=self.up_jl, size=self.up_jl, on_release=lambda x: self.go_to_gate("Join Room"))
         layout.add_widget(jr)
         
         grid = GridLayout(cols=2, spacing=dp(15), size_hint=(0.85, 0.35), pos_hint={'center_x': 0.5, 'top': 0.55})
@@ -168,15 +182,27 @@ class DashboardScreen(Screen):
         layout.add_widget(grid)
         
         plus_btn = Button(text="+", font_size='35sp', background_normal='', background_color=(0.3, 0.3, 1, 1), size_hint=(None, None), size=(dp(60), dp(60)), pos_hint={'center_x': 0.5, 'y': 0.05})
-        plus_btn.bind(on_release=lambda x: VotingModeModal().open())
+        plus_btn.bind(on_release=lambda x: VotingModeModal(self.manager).open())
         layout.add_widget(plus_btn)
         self.add_widget(layout)
 
     def update_bg(self, *args): self.bg_rect.pos = self.pos; self.bg_rect.size = self.size
     def up_jl(self, ins, *args): self.jl.rounded_rectangle = (ins.x, ins.y, ins.width, ins.height, 20)
+    
     def go_to_gate(self, mode_name):
-        self.manager.get_screen('room_gate').mode_subtitle.text = f"MODE: {mode_name}"
-        self.manager.transition.direction = 'left'; self.manager.current = 'room_gate'
+        gate = self.manager.get_screen('room_gate')
+        if mode_name == "Join Room":
+            gate.mode_subtitle.opacity = 0
+            gate.create_btn.opacity = 0
+            gate.create_btn.disabled = True
+        else:
+            gate.mode_subtitle.text = f"MODE: {mode_name}"
+            gate.mode_subtitle.opacity = 1
+            gate.create_btn.opacity = 1
+            gate.create_btn.disabled = False
+            
+        self.manager.transition.direction = 'left'
+        self.manager.current = 'room_gate'
 
 class RoomGateScreen(Screen):
     def __init__(self, **kwargs):
@@ -185,6 +211,7 @@ class RoomGateScreen(Screen):
         with layout.canvas.before:
             Color(0.96, 1, 0.98, 1); self.bg_rect = Rectangle(pos=(0, 0), size=Window.size)
         layout.bind(size=self.update_bg)
+        
         back_btn = Button(text="Back", size_hint=(0.2, 0.05), pos_hint={'x': 0.05, 'top': 0.91}, background_color=(0, 0, 0, 0), color=(0.3, 0.3, 1, 1), bold=True, font_size='14sp')
         with back_btn.canvas.before:
             Color(0.43, 0.89, 0.75, 1); self.back_line = Line(rounded_rectangle=(0, 0, 0, 0, 12), width=1.1)
@@ -192,22 +219,24 @@ class RoomGateScreen(Screen):
         
         label_container = BoxLayout(orientation='vertical', size_hint=(0.8, None), height=dp(65), pos_hint={'center_x': 0.5, 'top': 0.80})
         title_label = Label(text="Enter Room Code", font_size='26sp', bold=True, color=(0.3, 0.3, 1, 1), size_hint_y=None, height=dp(35))
-        self.mode_subtitle = Label(text="MODE: Ballot Form", font_size='18sp', color=(0.1, 0.8, 0.6, 1), size_hint_y=None, height=dp(30))
+        self.mode_subtitle = Label(text="", font_size='18sp', color=(0.1, 0.8, 0.6, 1), size_hint_y=None, height=dp(30))
         label_container.add_widget(title_label); label_container.add_widget(self.mode_subtitle); layout.add_widget(label_container)
         
         self.code_input = TextInput(hint_text="######", multiline=False, halign='center', font_size='32sp', size_hint=(0.8, 0.12), pos_hint={'center_x': 0.5, 'top': 0.68}, background_color=(0.92, 0.92, 0.92, 1), background_normal='', padding_y=[dp(20), 0])
         layout.add_widget(self.code_input)
         
         btn_box = BoxLayout(orientation='vertical', spacing=dp(15), size_hint=(0.7, 0.20), pos_hint={'center_x': 0.5, 'top': 0.45})
-        btn_box.add_widget(self.create_styled_button("Join"))
-        c_btn = self.create_styled_button("Create"); c_btn.bind(on_release=self.go_to_create); btn_box.add_widget(c_btn)
+        
+        self.join_btn = self.create_styled_button("Join")
+        self.create_btn = self.create_styled_button("Create") 
+        
+        btn_box.add_widget(self.join_btn); btn_box.add_widget(self.create_btn)
         layout.add_widget(btn_box); self.add_widget(layout)
 
     def update_bg(self, *args): self.bg_rect.size = Window.size
     def update_back_ui(self, ins, *args): self.back_line.rounded_rectangle = (ins.x, ins.y, ins.width, ins.height, 12)
     def go_back(self, *args): self.manager.transition.direction = 'right'; self.manager.current = 'dashboard'
-    def go_to_create(self, *args): self.manager.transition.direction = 'left'; self.manager.current = 'create_room'
-
+    
     def create_styled_button(self, txt):
         btn = Button(text=txt, font_size='22sp', bold=True, color=(0.3, 0.3, 1, 1), background_color=(0,0,0,0))
         with btn.canvas.before:
@@ -215,24 +244,109 @@ class RoomGateScreen(Screen):
         btn.bind(pos=lambda i, v: setattr(i.line, 'rounded_rectangle', (i.x, i.y, i.width, i.height, 25)), size=lambda i, v: setattr(i.line, 'rounded_rectangle', (i.x, i.y, i.width, i.height, 25)))
         return btn
 
-class CreateRoomScreen(Screen):
+class ProfileScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = FloatLayout()
-        with layout.canvas.before:
-            Color(1, 1, 1, 1); Rectangle(pos=(0, 0), size=Window.size)
-        content = BoxLayout(orientation='vertical', spacing=dp(20), size_hint=(0.85, None), height=dp(400), pos_hint={'center_x': 0.5, 'top': 0.85})
-        content.add_widget(Label(text="Create New Room", font_size='24sp', bold=True, color=(0, 0, 0, 1)))
-        self.room_name = TextInput(hint_text="Room Name", multiline=False, size_hint_y=None, height=dp(50))
-        self.room_pass = TextInput(hint_text="Room Password (Optional)", password=True, multiline=False, size_hint_y=None, height=dp(50))
-        content.add_widget(self.room_name); content.add_widget(self.room_pass)
-        content.add_widget(Button(text="CREATE & START", size_hint_y=None, height=dp(55), bold=True, background_color=(0.43, 0.89, 0.75, 1), background_normal=''))
+        self.layout = FloatLayout()
         
-        cancel_btn = Button(text="Cancel", size_hint_y=None, height=dp(45), color=(0.3, 0.3, 0.9, 1), background_color=(0, 0, 0, 0))
-        cancel_btn.bind(on_release=self.go_back); content.add_widget(cancel_btn)
-        layout.add_widget(content); self.add_widget(layout)
+        # 1. Background (Solid White)
+        with self.layout.canvas.before:
+            Color(1, 1, 1, 1)
+            self.bg_rect = Rectangle(pos=self.pos, size=Window.size)
+        self.layout.bind(size=self.update_bg)
 
-    def go_back(self, *args): self.manager.transition.direction = 'right'; self.manager.current = 'room_gate'
+        # 2. Header Buttons (Text Only)
+        self.back_btn = Button(
+            text="Back", font_size='16sp', size_hint=(None, None), size=(dp(80), dp(50)),
+            pos_hint={'x': 0.05, 'top': 0.98}, background_color=(0,0,0,0), color=(0.3, 0.3, 1, 1), bold=True
+        )
+        self.back_btn.bind(on_release=self.go_back)
+
+        self.settings_btn = Button(
+            text="Settings", font_size='16sp', size_hint=(None, None), size=(dp(100), dp(50)),
+            pos_hint={'right': 0.95, 'top': 0.98}, background_color=(0,0,0,0), color=(0.3, 0.3, 1, 1), bold=True
+        )
+
+        # 3. Profile Icon Shape (Positioned at Top)
+        self.avatar_container = FloatLayout(
+            size_hint=(None, None), size=(dp(100), dp(180)), pos_hint={'center_x': 0.5, 'top': 7.32}
+        )
+        
+        with self.avatar_container.canvas:
+            Color(0.25, 0.85, 0.7, 1) # Teal Ring
+            self.avatar_ring = Line(circle=(0, 0, dp(88)), width=dp(2.5))
+            Color(1, 1, 1, 1) # White Silhouette
+            self.avatar_head = Ellipse(size=(dp(75), dp(75)))
+            self.avatar_body = Ellipse(size=(dp(125), dp(60)))
+            Color(0.8, 0.8, 0.8, 1) # Subtle border for visibility
+            self.head_border = Line(circle=(0, 0, dp(37.5)), width=dp(1))
+
+        self.avatar_container.bind(pos=self.update_avatar_position)
+
+        # 4. Info Card
+        self.card = FloatLayout(size_hint=(0.85, 0.28), pos_hint={'center_x': 0.5, 'top': 0.60})
+        with self.card.canvas.before:
+            Color(0.96, 0.96, 0.96, 1)
+            self.card_bg = RoundedRectangle(radius=[dp(25)])
+            Color(0.3, 0.3, 1, 1)
+            self.card_border = Line(rounded_rectangle=(0, 0, 0, 0, 25), width=dp(1.2))
+        self.card.bind(pos=self.update_card, size=self.update_card)
+
+        self.name_label = Label(text="Full Name", font_size='24sp', bold=True, color=(0, 0, 0, 1),
+                           pos_hint={'center_x': 0.5, 'center_y': 0.75})
+        self.email_label = Label(text="@email_address", font_size='14sp', color=(0.5, 0.5, 0.5, 1),
+                            pos_hint={'center_x': 0.5, 'center_y': 0.58})
+
+        # 5. Edit Profile Button
+        self.edit_btn = Button(text="Edit Profile", size_hint=(0.7, 0.25), pos_hint={'center_x': 0.5, 'center_y': 0.3},
+                          background_normal='', background_color=(0,0,0,0), color=(1, 1, 1, 1), bold=True)
+        with self.edit_btn.canvas.before:
+            Color(0.3, 0.3, 1, 1)
+            self.btn_rect = RoundedRectangle(radius=[dp(15)])
+        self.edit_btn.bind(pos=self.update_btn_ui, size=self.update_btn_ui)
+        self.edit_btn.bind(on_release=self.show_edit_popup)
+
+        self.card.add_widget(self.name_label); self.card.add_widget(self.email_label); self.card.add_widget(self.edit_btn)
+        self.layout.add_widget(self.back_btn); self.layout.add_widget(self.settings_btn); self.layout.add_widget(self.avatar_container); self.layout.add_widget(self.card)
+        self.add_widget(self.layout)
+
+    def update_bg(self, *args): self.bg_rect.size = self.size; self.bg_rect.pos = self.pos
+    def update_avatar_position(self, ins, *args):
+        cx, cy = ins.center
+        self.avatar_ring.circle = (cx, cy, dp(88))
+        self.avatar_head.pos = (cx - dp(37.5), cy - dp(5))
+        self.head_border.circle = (cx, cy + dp(32.5), dp(37.5))
+        self.avatar_body.pos = (cx - dp(62.5), cy - dp(65))
+    def update_card(self, ins, *args): self.card_bg.pos = ins.pos; self.card_bg.size = ins.size; self.card_border.rounded_rectangle = (ins.x, ins.y, ins.width, ins.height, 25)
+    def update_btn_ui(self, ins, *args): self.btn_rect.pos = ins.pos; self.btn_rect.size = ins.size
+    def go_back(self, *args): self.manager.transition.direction = 'right'; self.manager.current = 'dashboard'
+
+    # --- EDIT POPUP LOGIC ---
+    def show_edit_popup(self, instance):
+        popup_content = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
+        popup_content.add_widget(Label(text="Edit Profile", font_size='22sp', bold=True, color=(0.3, 0.3, 1, 1), size_hint_y=None, height=dp(40)))
+        
+        self.new_name = TextInput(text=self.name_label.text, hint_text="Full Name", multiline=False, size_hint_y=None, height=dp(50), background_color=(0.95, 0.95, 0.95, 1), background_normal='')
+        self.new_email = TextInput(text=self.email_label.text, hint_text="Email Address", multiline=False, size_hint_y=None, height=dp(50), background_color=(0.95, 0.95, 0.95, 1), background_normal='')
+        popup_content.add_widget(self.new_name); popup_content.add_widget(self.new_email)
+        
+        save_btn_container = FloatLayout(size_hint_y=None, height=dp(55))
+        save_btn = Button(text="SAVE CHANGES", bold=True, color=(1, 1, 1, 1), background_color=(0, 0, 0, 0), pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        with save_btn.canvas.before:
+            Color(0.25, 0.85, 0.7, 1) # Teal
+            self.save_rect = RoundedRectangle(radius=[dp(15)])
+        save_btn.bind(pos=lambda i, v: setattr(self.save_rect, 'pos', i.pos), size=lambda i, v: setattr(self.save_rect, 'size', i.size))
+        
+        save_btn_container.add_widget(save_btn); popup_content.add_widget(save_btn_container)
+        self.popup = ModalView(size_hint=(0.85, 0.45), background_color=(1, 1, 1, 1), background="")
+        self.popup.add_widget(popup_content)
+        save_btn.bind(on_release=self.apply_changes)
+        self.popup.open()
+
+    def apply_changes(self, instance):
+        if self.new_name.text.strip(): self.name_label.text = self.new_name.text
+        if self.new_email.text.strip(): self.email_label.text = self.new_email.text
+        self.popup.dismiss()
 
 class VotellyApp(App):
     def build(self):
@@ -240,7 +354,7 @@ class VotellyApp(App):
         sm.add_widget(SignUpScreen(name='signup'))
         sm.add_widget(DashboardScreen(name='dashboard'))
         sm.add_widget(RoomGateScreen(name='room_gate'))
-        sm.add_widget(CreateRoomScreen(name='create_room'))
+        sm.add_widget(ProfileScreen(name='profile')) 
         return sm
 
 if __name__ == '__main__':
